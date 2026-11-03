@@ -1,0 +1,8 @@
+.git
+outputs
+models
+.cache
+*.safetensors
+*.pt
+*.npy
+__pycache__
