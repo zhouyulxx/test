@@ -16,7 +16,12 @@ RUN git init -q /Hy-Nomas \
     && git -C /Hy-Nomas remote add origin https://github.com/Tencent-Hunyuan/Hy-Nomas.git \
     && git -C /Hy-Nomas fetch --depth 1 origin ${UPSTREAM_COMMIT} \
     && git -C /Hy-Nomas checkout --force FETCH_HEAD \
-    && git clone --depth 1 https://github.com/NVIDIA/cutlass.git /opt/cutlass
+    && if [ -d /opt/cutlass ] && [ -n "$(ls -A /opt/cutlass 2>/dev/null)" ]; then \
+         echo "Reusing CUTLASS bundled with base image"; \
+       else \
+         rm -rf /opt/cutlass; \
+         git clone --depth 1 https://github.com/NVIDIA/cutlass.git /opt/cutlass; \
+       fi
 COPY deploy /opt/streetview/deploy
 COPY streetview /opt/streetview/streetview
 COPY viewer /opt/streetview/viewer
