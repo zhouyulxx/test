@@ -1,0 +1,48 @@
+{
+  "session": "three-anchor-1793757746",
+  "status": "succeeded",
+  "verification_status": "passed",
+  "evidence": "Values transcribed from completed Pod verifier terminal output",
+  "image_ids": {
+    "A": "468b1210cf1f420d971cd40ce9b60a55",
+    "B": "882c2b1863724abd90eef5ad90bcb08e",
+    "C": "9dbbfe78b33844168feef745727a144f"
+  },
+  "input_sha256": {
+    "A": "17844bc489d3a1aa432912504a1c927032788cf63ebdb0a0eb7c235a4408c978",
+    "B": "8b2d635beeef5816cc269a21fba7f5fdee866bfd2285daaf7c6e5fab52fccf75",
+    "C": "b0472e5afcec586926b78b82a7f7518ac920a07440220ed47e29edafa96ac4ad"
+  },
+  "generated_frames": 196,
+  "frames_per_group": 98,
+  "initial_A_reconstruction_rgb_mae": 2.23,
+  "baseline_vs_corrected_endpoint_rgb_mae": {
+    "B": 3.609,
+    "C": 8.456
+  },
+  "metrics": {
+    "baseline": {
+      "B": {
+        "rgb_mae": 30.847,
+        "upper_half_rgb_mae": 38.878
+      },
+      "C": {
+        "rgb_mae": 36.796,
+        "upper_half_rgb_mae": 48.575
+      }
+    },
+    "corrected": {
+      "B": {
+        "rgb_mae": 28.792,
+        "upper_half_rgb_mae": 36.301
+      },
+      "C": {
+        "rgb_mae": 32.682,
+        "upper_half_rgb_mae": 43.576
+      }
+    }
+  },
+  "visual_quality_passed": null,
+  "visual_blocker": "Viewer browser ERR_INVALID_AUTH_CREDENTIALS",
+  "output_backup_complete": false
+}

@@ -51,7 +51,7 @@ bash scripts/inference/start_seg_ar_demo.sh \
 
 echo "[health] Waiting for worker readiness on internal port $PORT"
 READY=0
-for i in $(seq 1 "${NOMAS_READY_POLLS:-150}"); do
+for i in $(seq 1 "${NOMAS_READY_POLLS:-1800}"); do
   if PORT="$PORT" python "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/check-health.py" 2>/dev/null; then
     READY=1
     break

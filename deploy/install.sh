@@ -25,7 +25,7 @@ if [[ ! -f "$ROOT/apps/frontend/dist/index.html" ]]; then
   npm --prefix "$ROOT/apps/frontend" run build
 fi
 mkdir -p "$ROOT/apps/frontend/dist/streetview"
-cp "$CONTROLLER/viewer/index.html" "$ROOT/apps/frontend/dist/streetview/index.html"
+cp "$CONTROLLER/viewer/"*.html "$ROOT/apps/frontend/dist/streetview/"
 
 CUTLASS_PATH="${CUTLASS_PATH:-/opt/cutlass}"
 if [[ ! -d "$CUTLASS_PATH/include/cutlass" ]]; then

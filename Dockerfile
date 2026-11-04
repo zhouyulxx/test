@@ -32,7 +32,7 @@ RUN python /opt/streetview/deploy/patch_upstream.py /Hy-Nomas \
     && mkdir -p /Hy-Nomas/apps/frontend/dist/streetview \
     && chmod +x /opt/streetview/deploy/*.sh
 # Re-copy after npm build: vite overwrites dist on build.
-COPY viewer/index.html /Hy-Nomas/apps/frontend/dist/streetview/index.html
+COPY viewer/ /Hy-Nomas/apps/frontend/dist/streetview/
 EXPOSE 8081
 HEALTHCHECK --interval=90s --timeout=10s --start-period=15m --retries=3 \
   CMD python /opt/streetview/deploy/check-health.py || exit 1

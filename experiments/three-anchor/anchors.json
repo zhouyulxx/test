@@ -1,0 +1,86 @@
+{
+  "dataset": "uva-cv-lab/StereoWalker",
+  "segment": "3",
+  "source": "https://huggingface.co/datasets/uva-cv-lab/StereoWalker",
+  "license": "CC-BY-4.0",
+  "sequence_indices": [
+    363,
+    368,
+    373
+  ],
+  "distances_metres": [
+    4.853943408052671,
+    4.85647523024165
+  ],
+  "anchors": [
+    {
+      "label": "A",
+      "url": "https://huggingface.co/datasets/uva-cv-lab/StereoWalker/resolve/main/uva_test/3/left/005438.jpg",
+      "timestamp": 1763654070.6394763,
+      "left_image": "005438.jpg",
+      "right_image": "005438.jpg",
+      "left_timestamp": 1763654070.6564424,
+      "right_timestamp": 1763654070.6564424,
+      "trajectory_timestamp": 1763654070.6478207,
+      "pose": {
+        "tx": -211.5139581741236,
+        "ty": -111.33782003082064,
+        "tz": 0.0,
+        "rx": 0.0,
+        "ry": 0.0,
+        "rz": -151.95579950612137
+      },
+      "time_diffs": {
+        "left": 0.01696610450744629,
+        "right": 0.01696610450744629,
+        "trajectory": 0.008344411849975586
+      }
+    },
+    {
+      "label": "B",
+      "url": "https://huggingface.co/datasets/uva-cv-lab/StereoWalker/resolve/main/uva_test/3/left/005513.jpg",
+      "timestamp": 1763654075.6394763,
+      "left_image": "005513.jpg",
+      "right_image": "005513.jpg",
+      "left_timestamp": 1763654075.6566732,
+      "right_timestamp": 1763654075.6566732,
+      "trajectory_timestamp": 1763654075.6478562,
+      "pose": {
+        "tx": -215.8223946951525,
+        "ty": -113.5734723635509,
+        "tz": 0.0,
+        "rx": 0.0,
+        "ry": 0.0,
+        "rz": -153.29175293353325
+      },
+      "time_diffs": {
+        "left": 0.0171968936920166,
+        "right": 0.0171968936920166,
+        "trajectory": 0.008379936218261719
+      }
+    },
+    {
+      "label": "C",
+      "url": "https://huggingface.co/datasets/uva-cv-lab/StereoWalker/resolve/main/uva_test/3/left/005587.jpg",
+      "timestamp": 1763654080.6394763,
+      "left_image": "005587.jpg",
+      "right_image": "005587.jpg",
+      "left_timestamp": 1763654080.6235673,
+      "right_timestamp": 1763654080.6235673,
+      "trajectory_timestamp": 1763654080.6478374,
+      "pose": {
+        "tx": -220.10576697687162,
+        "ty": -115.8621561683066,
+        "tz": 0.0,
+        "rx": 0.0,
+        "ry": 0.0,
+        "rz": -151.78538723386055
+      },
+      "time_diffs": {
+        "left": 0.01590895652770996,
+        "right": 0.01590895652770996,
+        "trajectory": 0.008361101150512695
+      }
+    }
+  ]
+}

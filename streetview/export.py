@@ -6,6 +6,7 @@ poses rather than measured/calibrated poses; generated view consistency is unver
 from __future__ import annotations
 
 import json
+import fcntl
 import os
 import re
 from pathlib import Path
@@ -54,7 +55,7 @@ def _pose_at_frame(camera: dict | None, index: int, fps: int, source_frames: int
     return chosen, "input_pose_nearest_timestamp"
 
 
-def export_observations(video_np: np.ndarray, params: dict, output_dir: Path, fps: int) -> Path:
+def export_observations(video_np: np.ndarray, params: dict, output_dir: Path, fps: int, decoder_metadata: dict | None = None) -> Path:
     """Persist sampled PNG frames and a provenance-aware manifest.
 
     Called after the official worker constructs the final visible video_np and
@@ -72,11 +73,24 @@ def export_observations(video_np: np.ndarray, params: dict, output_dir: Path, fp
     destination.mkdir(parents=True, exist_ok=True)
     camera = _camera_source(params.get("camera_trajectory"))
     source_count = int(params.get("num_frames") or len(frames))
+    # Pinned causal_ar.py asserts output length = requested frames + replaced tail.
+    # Only align the new segment when that assertion is independently satisfied.
+    carry = 0
+    if isinstance(decoder_metadata, dict) and not any(params.get(k) for k in
+            ('reference_image_id', 'hide_reference_carry', 'reference_carry_visible_frames')):
+        candidate = int(decoder_metadata.get('replace_pixel_frames') or 0)
+        if candidate >= 0 and len(frames) == source_count + candidate:
+            carry = candidate
     observations = []
     for index in range(0, len(frames), interval):
         filename = f"frame_{index:05d}.png"
         Image.fromarray(frames[index], "RGB").save(destination / filename)
-        pose, alignment = _pose_at_frame(camera, index, fps, source_count, len(frames))
+        if carry and index < carry:
+            pose, alignment = None, "previous_segment_replacement_tail"
+        else:
+            pose, alignment = _pose_at_frame(camera, index - carry, fps, source_count, len(frames) - carry)
+            if carry and pose is not None:
+                alignment = "decoder_verified_new_segment_" + alignment
         observations.append({
             "frame_index": index,
             "time_s": round(index / fps, 6),
@@ -91,6 +105,9 @@ def export_observations(video_np: np.ndarray, params: dict, output_dir: Path, fp
         "source_frames": source_count,
         "visible_frames": int(len(frames)),
         "frame_stride": interval,
+        "decoder_replacement_frames": carry,
+        "decoder_metadata": decoder_metadata,
+        "session_id": params.get("session_id"),
         "height": int(frames.shape[1]),
         "width": int(frames.shape[2]),
         "camera_coordinate_system": camera.get("coordinateSystem") if camera else None,
@@ -100,4 +117,19 @@ def export_observations(video_np: np.ndarray, params: dict, output_dir: Path, fp
         "observations": observations,
     }
     (destination / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
+    # Single GPU deployment, with a lock to keep the catalog safe if expanded.
+    root = destination.parent
+    with (root / ".index.lock").open("w") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        index_path = root / "index.json"
+        try:
+            previous = json.loads(index_path.read_text()).get("runs", [])
+        except (OSError, ValueError, AttributeError):
+            previous = []
+        runs = [{"request_id": request_id, "frames": int(len(frames)),
+                 "manifest": f"{request_id}/manifest.json"}]
+        runs.extend(r for r in previous if r.get("request_id") != request_id)
+        temporary = root / ".index.tmp"
+        temporary.write_text(json.dumps({"runs": runs[:200]}, indent=2), encoding="utf-8")
+        temporary.replace(index_path)
     return destination / "manifest.json"

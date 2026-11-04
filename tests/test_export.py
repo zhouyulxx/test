@@ -33,6 +33,29 @@ class ExportTest(unittest.TestCase):
             self.assertIsNone(doc["observations"][0]["camera_pose_input"])
             self.assertEqual(doc["observations"][0]["pose_alignment"], "unverified_decoder_tail_or_hidden_frames")
 
+    def test_catalog_preserves_previous_runs(self):
+        with tempfile.TemporaryDirectory() as d:
+            arr = np.zeros((5, 8, 8, 3), dtype=np.uint8)
+            for run in ['first', 'second', 'second']:
+                export_observations(arr, {"request_id": run, "num_frames": 5}, Path(d), 24)
+            index = json.loads((Path(d) / 'streetview/index.json').read_text())
+            self.assertEqual([r['request_id'] for r in index['runs']], ['second', 'first'])
+            for run in index['runs']:
+                self.assertTrue((Path(d) / 'streetview' / run['manifest']).is_file())
+
+    def test_streaming_replacement_tail(self):
+        trajectory = build_trajectory(seconds=2, yaw_degrees=45)
+        with tempfile.TemporaryDirectory() as d:
+            arr = np.zeros((57, 8, 8, 3), dtype=np.uint8)
+            path = export_observations(arr, {"request_id": "tail", "num_frames": 49,
+                "camera_trajectory": trajectory}, Path(d), 24,
+                decoder_metadata={"replace_pixel_frames": 8})
+            doc = json.loads(path.read_text())
+            self.assertEqual(doc['observations'][0]['pose_alignment'], 'previous_segment_replacement_tail')
+            self.assertIsNone(doc['observations'][0]['camera_pose_input'])
+            self.assertEqual(doc['observations'][2]['camera_pose_input'], trajectory['frames'][0])
+            self.assertIn('decoder_verified', doc['observations'][2]['pose_alignment'])
+
     def test_pose_exact_index(self):
         traj = build_trajectory(seconds=2)
         with tempfile.TemporaryDirectory() as d:
