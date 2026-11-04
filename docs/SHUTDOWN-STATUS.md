@@ -1,0 +1,5 @@
+# Shutdown status — 2026-11-04 UTC
+
+Source, input A/B/C photos, provenance, metrics and handoff notes are committed. User requested shutdown after backups. The RunPod Stop modal explicitly warns: "You do not have a volume configured. ALL DATA will be lost!" Raw generated frames/videos remain on the Pod; code/results summaries do not constitute a raw-output backup. A full output archive is being prepared at /Hy-Nomas/outputs/seg_ar_demo/experiment-backup-20261104.tar.gz behind the existing authenticated output server. It has not been transferred off-Pod. Assistant browser authentication blocks that export. Do not mark raw backup complete or stop the Pod until the archive is downloaded, or the user explicitly accepts discarding generated outputs. Never weaken authentication for export.
+
+Next turn: inspect the final shutdown/backup status rather than assuming the Pod stopped. The stop dialog was canceled. No new generation is running. The GPU rental still incurs its ordinary running charge while the Pod remains running.
