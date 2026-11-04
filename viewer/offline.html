@@ -1,0 +1,20 @@
+<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Continuous Street • Offline</title>
+<style>body{margin:0;background:#10151b;color:#e6edf5;font:16px system-ui}main{max-width:1150px;margin:auto;padding:24px}h1{font-size:24px}small,p{color:#aab8c8}.stage{background:#080c10;display:grid;place-items:center;min-height:280px;aspect-ratio:832/480}.stage img{width:100%;height:100%;object-fit:contain}button,select{background:#233144;color:white;border:1px solid #52627a;border-radius:8px;padding:10px;cursor:pointer}button:hover{background:#36516d}.bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:15px 0}input{flex:1;min-width:180px}#anchors{display:flex;gap:8px;flex-wrap:wrap}#reference{max-width:640px;width:100%}#error{color:#ffae9f}a{color:#8ac4ff}</style>
+<main><h1>Continuous Street <small>离线实验 viewer</small></h1><p>AI 生成的连续场景 · 直线前进 · 输入点距离不代表已校准的生成距离</p><div class="stage"><img id="frame" alt="生成画面"></div><p id="error" role="alert"></p><div class="bar"><button id="play">播放</button><button id="prev">←</button><button id="next">→</button><input id="scrub" aria-label="帧进度" type="range" min="0" value="0"><select id="speed" aria-label="播放速度"><option value="0.25">0.25×</option><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="2">2×</option></select><span id="status"></span></div><div id="anchors"></div><details><summary>输入 anchor 与实验数据</summary><p id="referenceInfo"></p><img id="reference" alt="原始输入街景"><p><a href="manifest.json" download>Manifest</a> · <a href="report.json" download>生成记录</a> · <a href="inputs/anchors.json" download>输入点元数据</a> · <a href="checksums.json" download>文件校验</a></p></details><p>空格播放/暂停；左右方向键逐帧移动；拖动滑块或点击 anchor 跳转。解压后可直接打开本页，无需 RunPod。</p></main>
+<script src="data.js"></script><script>
+'use strict';
+const $=id=>document.getElementById(id), data=window.STREETVIEW_DATA;
+if(!data){$('error').textContent='缺少 data.js：请完整解压 viewer 压缩包。';}else{
+ const m=data.manifest, frames=m.frames;let index=0,playing=false,last=0,loading=false;
+ $('scrub').max=frames.length-1;
+ function pause(){playing=false;$('play').textContent='播放';}
+ function show(n){index=Math.max(0,Math.min(frames.length-1,n));loading=true;$('frame').src=frames[index];$('scrub').value=index;$('status').textContent=`${index+1} / ${frames.length} 帧`;}
+ $('frame').onload=()=>{loading=false;};$('frame').onerror=()=>{loading=false;pause();$('error').textContent='画面文件缺失，请完整解压所有文件。';};
+ $('play').onclick=()=>{playing=!playing;last=0;$('play').textContent=playing?'暂停':'播放';if(playing&&index===frames.length-1)show(0);};
+ $('prev').onclick=()=>{pause();show(index-1);};$('next').onclick=()=>{pause();show(index+1);};$('scrub').oninput=()=>{pause();show(Number($('scrub').value));};
+ document.addEventListener('keydown',e=>{if(['INPUT','SELECT','BUTTON'].includes(e.target.tagName))return;if(e.code==='Space'){e.preventDefault();$('play').click();}if(e.code==='ArrowLeft'){e.preventDefault();$('prev').click();}if(e.code==='ArrowRight'){e.preventDefault();$('next').click();}});
+ function tick(t){if(playing&&!loading&&t-last>=1000/(m.fps*Number($('speed').value))){last=t;if(index<frames.length-1)show(index+1);else pause();}requestAnimationFrame(tick);}requestAnimationFrame(tick);
+ for(const a of m.anchors){const b=document.createElement('button');b.textContent=`${a.label} · ${a.reference_distance_m.toFixed(1)} m`;b.onclick=()=>{pause();show(a.frame_index);const raw=data.inputs.anchors.find(x=>x.label===a.label);if(raw){$('reference').src='inputs/'+raw.file;$('referenceInfo').textContent=JSON.stringify(raw,null,2);}};$('anchors').append(b);}
+ show(0);
+}
+</script></html>
