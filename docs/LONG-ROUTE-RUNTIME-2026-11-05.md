@@ -101,3 +101,19 @@ Do not infer anchor effectiveness from successful jobs or the presence of input
 thumbnails. Inspect generated frames around corrections and the continuation
 after P12 before recording a visual pass. Keep original imagery and private
 runtime records out of the public repository.
+
+## Progressive run visual checkpoint
+
+At 29 of 47 completed jobs, 1,372 frames were exported through P08. Sampled
+anchor frames at P04, P05, P06, P07 and P08 remain at street level and show
+recognizable changes toward their respective input layouts. In particular, the
+legacy rooftop failure at P06 was not present at the new P06 marker. However,
+strong blur, ghosting and granular texture are visible. A sampled intermediate
+frame between P05 and P06 contains a plausible street but buildings inconsistent
+with the real inputs. These observations establish neither calibrated travel
+distance nor geometric reconstruction. Endpoint similarity alone is not proof
+of continuous camera control between anchors.
+
+The completed continuation metadata checked so far retain KV-cache continuity.
+The full route, final uncorrected continuation and final export are still pending.
+Do not label this checkpoint as a visual pass or a completed deliverable.
