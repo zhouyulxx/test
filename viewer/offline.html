@@ -6,9 +6,18 @@
 const $=id=>document.getElementById(id), data=window.STREETVIEW_DATA;
 if(!data){$('error').textContent='缺少 data.js：请完整解压 viewer 压缩包。';}else{
  const m=data.manifest, frames=m.frames;let index=0,playing=false,last=0,loading=false;
+ const buffer=new Map();let pending=0;
+ function warm(){
+  for(const key of buffer.keys())if(key<index-2||key>index+48)buffer.delete(key);
+  for(let n=index+1;n<Math.min(frames.length,index+49)&&pending<4;n++){
+   if(buffer.has(n))continue;
+   const img=new Image();buffer.set(n,img);pending++;
+   img.onload=img.onerror=()=>{pending--;warm();};img.src=frames[n];
+  }
+ }
  $('scrub').max=frames.length-1;
  function pause(){playing=false;$('play').textContent='播放';}
- function show(n){index=Math.max(0,Math.min(frames.length-1,n));loading=true;$('frame').src=frames[index];$('scrub').value=index;$('status').textContent=`${index+1} / ${frames.length} 帧`;}
+ function show(n){index=Math.max(0,Math.min(frames.length-1,n));loading=true;$('frame').src=frames[index];$('scrub').value=index;$('status').textContent=`${index+1} / ${frames.length} 帧`;warm();}
  $('frame').onload=()=>{loading=false;};$('frame').onerror=()=>{loading=false;pause();$('error').textContent='画面文件缺失，请完整解压所有文件。';};
  $('play').onclick=()=>{playing=!playing;last=0;$('play').textContent=playing?'暂停':'播放';if(playing&&index===frames.length-1)show(0);};
  $('prev').onclick=()=>{pause();show(index-1);};$('next').onclick=()=>{pause();show(index+1);};$('scrub').oninput=()=>{pause();show(Number($('scrub').value));};
