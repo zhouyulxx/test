@@ -5,6 +5,8 @@ import json
 import shutil
 import tempfile
 import zipfile
+import subprocess
+import html
 from pathlib import Path
 
 
@@ -38,6 +40,22 @@ def package(run, output):
             dest = target / name
             dest.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(safe(run, name), dest)
+        ffmpeg = shutil.which('ffmpeg')
+        if not ffmpeg:
+            import imageio_ffmpeg
+            ffmpeg = imageio_ffmpeg.get_ffmpeg_exe()
+        subprocess.run([ffmpeg, '-hide_banner', '-loglevel', 'error', '-y',
+            '-framerate', str(manifest['fps']), '-i', str(target/'frame_%06d.jpg'),
+            '-frames:v', str(len(manifest['frames'])), '-c:v', 'libx264',
+            '-preset', 'fast', '-crf', '18', '-pix_fmt', 'yuv420p',
+            '-movflags', '+faststart', str(target/'route.mp4')], check=True)
+        manifest['video'] = 'route.mp4'
+        (target/'manifest.json').write_text(json.dumps(manifest, indent=2))
+        comparisons = []
+        for marker in manifest['anchors']:
+            anchor = next(a for a in inputs['anchors'] if a['label'] == marker['label'])
+            comparisons.append('<h2>'+html.escape(marker['label'])+' · '+str(marker['reference_distance_m'])+' m</h2><div class="pair"><figure><img src="'+html.escape(manifest['frames'][marker['frame_index']], quote=True)+'"><figcaption>生成画面</figcaption></figure><figure><img src="inputs/'+html.escape(anchor['file'], quote=True)+'"><figcaption>原始输入 anchor</figcaption></figure></div>')
+        (target/'comparison.html').write_text('<!doctype html><meta charset="utf-8"><title>Anchor comparison</title><style>body{font:16px system-ui;background:#10151b;color:white;margin:24px}.pair{display:flex;flex-wrap:wrap}figure{margin:8px;flex:1;min-width:300px}img{width:100%}a{color:#8ac4ff}</style><h1>输入 anchor 与生成结果对照</h1><p>用于检查方向漂移和校准效果；输入点距离并非生成场景的实测距离。</p><a href="index.html">返回 viewer</a>'+''.join(comparisons))
         viewer = Path(__file__).resolve().parents[1] / 'viewer/offline.html'
         shutil.copy2(viewer, target / 'index.html')
         data = {'manifest': manifest, 'inputs': inputs, 'report': report}
@@ -45,6 +63,7 @@ def package(run, output):
         (target / 'README.txt').write_text(
             'Extract the entire ZIP, then open index.html in Chrome. No GPU, server, API key or internet is required.\n'
             'Controls: Space play/pause, Left/Right one frame, slider scrub, anchor buttons jump.\n'
+            'route.mp4 provides smooth playback; individual frames remain available for inspection. comparison.html compares every anchor with the generated endpoint.\n'
             'Frames are AI-generated. Inputs contain Google attribution. Distances describe input locations, not calibrated generated positions.\n'
             'Anchor correction is an experimental inference heuristic; visual quality is not guaranteed.\n'
             'manifest.json, report.json, per-job JSON files and inputs/anchors.json retain settings, camera commands, cache continuity evidence, jobs and input metadata.\n'
