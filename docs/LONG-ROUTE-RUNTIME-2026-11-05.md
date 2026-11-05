@@ -76,7 +76,7 @@ frame path traversal rejection. The source patch was checked for idempotence.
 
 Actual generated frames were used to verify MP4 playback, speed changes, frame
 stepping, spacebar control, scrubbing, anchor preview and the comparison page in
-the browser. The full progressive run and its visual evaluation remain pending.
+the browser. The progressive run has now completed; see the final outcome below.
 
 ## Reproduction after a fresh image or runtime
 
@@ -115,5 +115,46 @@ distance nor geometric reconstruction. Endpoint similarity alone is not proof
 of continuous camera control between anchors.
 
 The completed continuation metadata checked so far retain KV-cache continuity.
-The full route, final uncorrected continuation and final export are still pending.
-Do not label this checkpoint as a visual pass or a completed deliverable.
+This checkpoint preceded full completion. It must not be interpreted as a visual pass.
+
+## Final progressive outcome
+
+All 47 jobs completed, producing 2,254 frames at 24 fps (93.92 seconds),
+12 anchor markers over the 398.3 m input route, and two uncorrected continuation
+jobs after P12. All 46 continuation jobs retain `continued_cache=true`.
+Generation completion is confirmed, but **visual validation failed**.
+
+- P07→P08 intermediate frame index 1273 drifts onto the sidewalk close to a
+  building, although the subsequent anchor pulls the view back toward the road.
+- P10, P11 and P12 marker frames resemble the respective target layouts but
+  retain strong blur, ghosting and granular texture.
+- At frame index 2204 after P12, with correction disabled, the image becomes
+  sharper but returns to a different street layout, sidewalk viewpoint and upward
+  tilt. The final frame remains on the sidewalk. This is not stable continuation
+  along the requested lane.
+- This is a sampled visual review, not an exhaustive geometric evaluation.
+  The implementation delivers soft latent target attraction, not a demonstrated
+  route-constrained world model. Do not describe this experiment as production
+  ready or as a successful continuous Street View replacement.
+
+The standalone ZIP was downloaded, reassembled byte-for-byte after browser
+download issues, and checked against the server archive SHA-256. All 2,322
+checksummed members verified. It contains all original inputs, 2,254 JPEG frames,
+`route.mp4`, the interactive viewer, 12-pair comparison page, per-job metadata,
+`visual-review.json`, report and checksums. The report distinguishes successful
+generation from `visual_passed=false`, and the viewer/README display the failure.
+The legacy 1,127-frame failed partial baseline was retained separately.
+
+Browser checks passed for full-video playback, pause, slider scrubbing, anchor
+jumps, frame buttons, arrow-key stepping and speed selection. All 24 images on
+the comparison page loaded. The package uses relative local assets without a
+server, CDN or API key. Three export tests passed, including preservation of a
+failed visual review despite successful generation.
+
+Next investigation should isolate camera-following from anchor attraction: use
+the same inputs and motion commands, inspect intermediate and post-anchor frames,
+and compare correction policies without changing multiple factors at once.
+Stronger attraction alone is not sufficient: it improves endpoint resemblance
+while introducing severe image artifacts and does not prevent subsequent drift.
+The present FOV/size configuration is an experimental baseline, not a validated
+optimum. No new Docker image was built during this runtime patch experiment.
