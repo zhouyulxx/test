@@ -1,4 +1,4 @@
-"""Run local ordered image anchors through one persistent Hy-Nomas session.
+"""Run ordered anchors with persistent continuations and optional explicit state refresh.
 
 Default is a CPU-only dry run. Use --execute on the model server explicitly.
 Separate baseline/corrected runs reset the session with the same seed/settings;
