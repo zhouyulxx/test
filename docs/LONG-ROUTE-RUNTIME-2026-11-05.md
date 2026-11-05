@@ -166,3 +166,38 @@ saved as durable user deliverables after checksum verification. The runtime has
 no persistent volume: its stop dialog warns that container data will be lost.
 Shutdown was left at the confirmation step rather than claiming it had stopped.
 A fresh runtime will need model downloads and deployment patches again.
+
+## Strong reference-state refresh diagnostic
+
+The user rejected endpoint attraction as ineffective correction. An explicit
+`--anchor-state-refresh reference` mode now resets generation state at each
+reached anchor and initializes it with 120 fixed reference frames, then resumes
+ordinary forward generation. This is a state reset, NOT uninterrupted KV-cache
+continuity. Reference warm-up frames are excluded from the viewer; their decoder
+carry must not overwrite the previously generated bridge. The first continuation
+after a refresh skips that carry. Subsequent continuation carry works normally.
+The default remains the old non-refresh path for controlled comparisons.
+
+A short diagnostic uses the first two real inputs, four segments toward B,
+progressive strength 1, a B reference refresh, and two uncorrected tail segments:
+`--diagnostic-anchors 2 --anchor-state-refresh reference --strength 1`.
+It completed 8 jobs and exported 294 frames (12.25 seconds).
+
+Observed findings:
+- Strength 1 alone still yields a blurred/ghosted bridge endpoint (frame 195).
+- After resetting to B, frame 196 is much closer to the sharp original B view.
+  This is an abrupt transition, not a solved smooth bridge.
+- At frame 244 (about 2 seconds after refresh), B's road markings and right-side
+  buildings remain recognizable without further correction.
+- At frame 293 (about 4 seconds after refresh), the view has advanced along the
+  road while retaining the white building and yellow vehicle from the B scene.
+- This supports short-horizon anchor influence after explicit state refresh.
+  It does not establish long-route stability or seamless camera motion. The
+  diagnostic remains `visual_passed=false` because the bridge and join fail
+  smooth-continuity review. Do not claim that increasing strength alone solved it.
+
+The CPU request/assembly regression test passed: exactly two explicit resets
+(initialization and B refresh), 8 jobs, 294 exported frames, two selected inputs,
+and no static reference carry overwriting the previous transition endpoint.
+The mode and resets are retained in the report, not disguised as continuous cache.
+The viewer can show the experiment-specific review summary.
