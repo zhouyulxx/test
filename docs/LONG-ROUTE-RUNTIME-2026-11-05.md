@@ -158,3 +158,11 @@ Stronger attraction alone is not sufficient: it improves endpoint resemblance
 while introducing severe image artifacts and does not prevent subsequent drift.
 The present FOV/size configuration is an experimental baseline, not a validated
 optimum. No new Docker image was built during this runtime patch experiment.
+
+## Preservation and shutdown handoff
+
+The complete experimental viewer and the failed partial legacy baseline were
+saved as durable user deliverables after checksum verification. The runtime has
+no persistent volume: its stop dialog warns that container data will be lost.
+Shutdown was left at the confirmation step rather than claiming it had stopped.
+A fresh runtime will need model downloads and deployment patches again.
