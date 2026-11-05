@@ -60,7 +60,7 @@ def main():
     with (runtime/'pool-restart.log').open('ab') as log:
         restarted = subprocess.Popen(command, cwd=cwd, env=environment,
             stdin=subprocess.DEVNULL, stdout=log, stderr=log, start_new_session=True)
-    (runtime/'gpu_pool.pid').write_text(str(restarted.pid))
+    (runtime/'worker.pid').write_text(str(restarted.pid))
     print('Managed pool restarted:', restarted.pid, flush=True)
 
 
