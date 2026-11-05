@@ -14,6 +14,8 @@ def patch(root: Path) -> None:
     patch_direct_sessions(root)
     from patch_anchor_correction import patch as patch_anchor_correction
     patch_anchor_correction(root)
+    from patch_progressive_anchor import patch as patch_progressive_anchor
+    patch_progressive_anchor(root)
     worker = root / "scripts/inference/run_seg_ar_gpu_worker.sh"
     content = worker.read_text(encoding="utf-8")
     old = "++model.vae.deepgemm_fp8=true"
