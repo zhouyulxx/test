@@ -1,6 +1,7 @@
 """Keep a live viewer checkpoint and package the completed route without model access."""
 import json, time, shutil, subprocess, sys
 import html
+import zipfile
 from pathlib import Path
 out=Path('/Hy-Nomas/outputs/seg_ar_demo')
 for _ in range(1440):
@@ -20,6 +21,10 @@ for _ in range(1440):
             if report['status']=='succeeded':
                 archive=dest/'offline-viewer.zip'
                 if not archive.exists():subprocess.run([sys.executable,'/opt/streetview/deploy/package-offline-viewer.py',str(dest),str(archive)],check=True)
+                with zipfile.ZipFile(archive) as packaged:
+                    for name in ['route.mp4','index.html','comparison.html','data.js','manifest.json','checksums.json']:
+                        with packaged.open('streetview-offline/'+name) as source, (dest/name).open('wb') as target:
+                            shutil.copyfileobj(source,target)
                 print('Packaged',archive,flush=True)
             completed=sum(j['status']=='succeeded' for j in report['jobs'])
             page='<!doctype html><meta charset="utf-8"><meta http-equiv="refresh" content="15"><title>Street route results</title><h1>连续街景生成进度</h1>'
