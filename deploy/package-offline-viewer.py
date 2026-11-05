@@ -28,6 +28,11 @@ def package(run, output, allow_partial=False):
         report['export_warning'] = 'Partial failed experiment retained for diagnosis; not a completed route.'
     for name in manifest['frames']:
         safe(run, name)
+    review_path = run / 'visual-review.json'
+    if review_path.is_file():
+        review = json.loads(review_path.read_text())
+        report['visual_passed'] = review['passed']
+        report['visual_review'] = review
     inputs = json.loads(safe(run, 'inputs/anchors.json').read_text())
     for anchor in inputs['anchors']:
         path = safe(run / 'inputs', anchor['file'])
@@ -37,6 +42,8 @@ def package(run, output, allow_partial=False):
         target = Path(temp) / 'streetview-offline'
         target.mkdir()
         names = set(manifest['frames']) | {'manifest.json', 'report.json', 'inputs/anchors.json'}
+        if review_path.is_file():
+            names.add('visual-review.json')
         names.update('inputs/' + a['file'] for a in inputs['anchors'])
         names.update(j['metadata_file'] for j in report['jobs'] if j.get('metadata_file'))
         for name in names:
@@ -66,6 +73,7 @@ def package(run, output, allow_partial=False):
         (target / 'data.js').write_text('window.STREETVIEW_DATA = ' + json.dumps(data, ensure_ascii=True) + ';\n')
         (target / 'README.txt').write_text(
             ('PARTIAL FAILED EXPERIMENT. This is not a completed or visually validated route.\n' if manifest.get('partial') else '')+
+            ('VISUAL REVIEW FAILED: this completed experiment does not demonstrate stable street-following. See visual-review.json.\n' if report.get('visual_passed') is False and not manifest.get('partial') else '')+
             'Extract the entire ZIP, then open index.html in Chrome. No GPU, server, API key or internet is required.\n'
             'Controls: Space play/pause, Left/Right one frame, slider scrub, anchor buttons jump.\n'
             'route.mp4 provides smooth playback; individual frames remain available for inspection. comparison.html compares every anchor with the generated endpoint.\n'
