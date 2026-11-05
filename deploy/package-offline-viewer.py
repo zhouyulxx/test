@@ -33,6 +33,7 @@ def package(run, output):
         target.mkdir()
         names = set(manifest['frames']) | {'manifest.json', 'report.json', 'inputs/anchors.json'}
         names.update('inputs/' + a['file'] for a in inputs['anchors'])
+        names.update(j['metadata_file'] for j in report['jobs'] if j.get('metadata_file'))
         for name in names:
             dest = target / name
             dest.parent.mkdir(parents=True, exist_ok=True)
@@ -46,7 +47,7 @@ def package(run, output):
             'Controls: Space play/pause, Left/Right one frame, slider scrub, anchor buttons jump.\n'
             'Frames are AI-generated. Inputs contain Google attribution. Distances describe input locations, not calibrated generated positions.\n'
             'Anchor correction is an experimental inference heuristic; visual quality is not guaranteed.\n'
-            'manifest.json, report.json and inputs/anchors.json retain settings, jobs and input metadata.\n'
+            'manifest.json, report.json, per-job JSON files and inputs/anchors.json retain settings, camera commands, cache continuity evidence, jobs and input metadata.\n'
             'Model weights and credentials are deliberately not included.\n')
         checks = {str(p.relative_to(target)): hashlib.sha256(p.read_bytes()).hexdigest()
                   for p in target.rglob('*') if p.is_file()}
