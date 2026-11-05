@@ -28,7 +28,7 @@ for _ in range(1440):
                 print('Packaged',archive,flush=True)
             completed=sum(j['status']=='succeeded' for j in report['jobs'])
             page='<!doctype html><meta charset="utf-8"><meta http-equiv="refresh" content="15"><title>Street route results</title><h1>连续街景生成进度</h1>'
-            page+='<p>状态：'+html.escape(report['status'])+'</p><p>完成任务：'+str(completed)+' / '+str(report['plan']['continuation_jobs']+1)+'</p><p>生成帧数：'+str(len(manifest['frames']))+'</p>'
+            page+='<p>状态：'+html.escape(report['status'])+'</p><p>完成任务：'+str(completed)+' / '+str(report['plan'].get('total_jobs',report['plan']['continuation_jobs']+1))+'</p><p>生成帧数：'+str(len(manifest['frames']))+'</p>'
             if manifest['frames']:
                 page+='<p><a href="long-route-probes/'+dest.name+'/index.html">打开当前生成的 viewer</a>（生成期间可刷新查看新增片段）</p>'
             if report['status']=='succeeded':
