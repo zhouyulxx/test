@@ -7,7 +7,7 @@ const $=id=>document.getElementById(id), data=window.STREETVIEW_DATA;
 if(!data){$('error').textContent='缺少 data.js：请完整解压 viewer 压缩包。';}else{
  const m=data.manifest, frames=m.frames;let index=0,playing=false,last=0,loading=false;
  if(m.partial||data.report.status==='failed'){$('error').textContent='本文件为中止实验的部分结果，不能视为整条路线验证通过。';}
- else if(data.report.visual_passed===false){$('error').textContent='生成已完成，但视觉验证未通过：存在轨迹偏移、模糊或重影。此文件用于实验对照。';}
+ else if(data.report.visual_passed===false){$('error').textContent=data.report.visual_review?.summary||'生成已完成，但视觉验证未通过：存在轨迹偏移、模糊或重影。此文件用于实验对照。';}
  const movie=$('movie'),hasVideo=Boolean(m.video);
  if(hasVideo){movie.src=m.video;movie.preload='auto';const a=document.createElement('a');a.href='comparison.html';a.textContent='逐个 anchor 对照';$('anchors').after(a);}
  const buffer=new Map();let pending=0;
