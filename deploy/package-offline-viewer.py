@@ -50,7 +50,7 @@ def package(run, output, allow_partial=False):
             ffmpeg = imageio_ffmpeg.get_ffmpeg_exe()
         subprocess.run([ffmpeg, '-hide_banner', '-loglevel', 'error', '-y',
             '-framerate', str(manifest['fps']), '-i', str(target/'frame_%06d.jpg'),
-            '-frames:v', str(len(manifest['frames'])), '-c:v', 'libx264',
+            '-frames:v', str(len(manifest['frames'])), '-c:v', 'libx264', '-threads', '2',
             '-preset', 'fast', '-crf', '18', '-pix_fmt', 'yuv420p',
             '-movflags', '+faststart', str(target/'route.mp4')], check=True)
         manifest['video'] = 'route.mp4'
