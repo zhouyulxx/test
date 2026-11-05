@@ -102,6 +102,14 @@ def main():
         save()
         if job['status'] != 'succeeded':
             raise RuntimeError('Generation failed; inspect local server job ' + job['id'])
+        metadata_name = Path(job['result']['metadata_url']).name
+        metadata_path = args.output / metadata_name
+        generated_params = json.loads(metadata_path.read_text())
+        shutil.copy2(metadata_path, dest / metadata_name)
+        entry['metadata_file'] = metadata_name
+        entry['continued_cache'] = bool(generated_params.get('continue_kv_cache'))
+        if collect and not entry['continued_cache']:
+            raise RuntimeError('Persistent session cache was lost; refusing discontinuous output')
         if collect:
             source = args.output / 'streetview' / job['result']['id']
             manifest = json.loads((source/'manifest.json').read_text())
