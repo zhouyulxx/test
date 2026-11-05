@@ -23,6 +23,8 @@ def main():
     parser.add_argument('--segments-per-gap', type=int, default=4)
     parser.add_argument('--strength', type=float, default=0.85)
     parser.add_argument('--correction-policy', choices=['legacy','progressive'], default='progressive')
+    parser.add_argument('--diagnostic-anchors',type=int,default=0,help='Explicit short diagnostic: use first N anchors (minimum 2)')
+    parser.add_argument('--anchor-state-refresh',choices=['none','reference'],default='none',help='Rebuild generation history from each reached anchor; explicit cache reset, not an uninterrupted session')
     parser.add_argument('--output', type=Path, default=Path('/Hy-Nomas/outputs/seg_ar_demo'))
     args = parser.parse_args()
     if args.segments_per_gap < 1 or not 0 <= args.strength <= 1:
@@ -44,14 +46,24 @@ def main():
         if a['distance_m'] <= previous:
             raise ValueError('Anchor distances must increase')
         previous = a['distance_m']
+    if args.diagnostic_anchors:
+        if not 2 <= args.diagnostic_anchors <= len(anchors):
+            parser.error('Diagnostic anchor count must be between 2 and available inputs')
+        anchors=anchors[:args.diagnostic_anchors]
+    if args.anchor_state_refresh!='none' and args.mode!='corrected':
+        parser.error('State refresh requires corrected mode')
     intervals = (len(anchors)-1)*args.segments_per_gap
     plan = {'anchors':len(anchors), 'mode':args.mode, 'segments_per_gap':args.segments_per_gap,
             'continuation_jobs':intervals+2, 'frames_per_job':49,
+            'total_jobs':1+intervals+2+(len(anchors)-1 if args.anchor_state_refresh=='reference' else 0),
+            'anchor_state_refresh':args.anchor_state_refresh,
+            'uninterrupted_cache':args.anchor_state_refresh=='none',
+            'diagnostic':bool(args.diagnostic_anchors),
             'nominal_seconds_per_gap':2*args.segments_per_gap,
             'route_metres':anchors[-1]['distance_m']-anchors[0]['distance_m'],
             'correction_policy':args.correction_policy,
             'maximum_correction_strength':args.strength,
-            'correction':('progressive guidance throughout each gap; soft latent correction, no exact endpoint clamp'
+            'correction':('progressive guidance throughout each gap; strength 1 permits exact final latent attraction'
                           if args.correction_policy=='progressive' else 'legacy correction on last segment only'),
             'metric_motion_calibrated':False, 'tail_jobs_after_last_anchor':2}
     print(json.dumps(plan, indent=2), flush=True)
@@ -65,7 +77,9 @@ def main():
     dest = args.output / 'long-route-probes' / session
     dest.mkdir(parents=True)
     shutil.copytree(root, dest / 'inputs')
+    (dest/'inputs/anchors.json').write_text(json.dumps({**meta,'anchors':anchors},indent=2))
     frames, markers, image_ids = [], [], {}
+    skip_next_carry = False
     report = {'session':session, 'plan':plan, 'status':'running', 'jobs':[], 'visual_passed':None}
     def save():
         tmp = dest / 'report.tmp'
@@ -82,6 +96,7 @@ def main():
         with urllib.request.urlopen(req, timeout=120) as response:
             return json.load(response)
     def generate(name, extra, collect=True):
+        nonlocal skip_next_carry
         prompt = json.dumps({'Style':'realistic photography', 'perspective_view':'first person',
             'subject_list':[], 'segments':[{'visual_description_long':'Travel along a downtown street with buildings, sidewalks, trees and parked vehicles.',
             'description_change':'Move steadily forward at street level in the center of the same lane. Keep the horizon level, without turning, tilting, rising or flying.',
@@ -92,6 +107,7 @@ def main():
             'reset_session':False,**extra}
         job = call('/v1/generate',payload)
         entry = {'name':name,'id':job['id'],'status':job['status'],
+                 'collect_frames':collect,'reset_session':payload['reset_session'],
                  'conditioning':{k:payload.get(k) for k in ['reference_image_id','correction_image_id','correction_strength','correction_policy','correction_span']}}
         report['jobs'].append(entry); save()
         started = time.monotonic()
@@ -121,7 +137,8 @@ def main():
             if manifest['frame_stride'] != 1 or len(observations) < 49:
                 raise ValueError('Dense frame export missing')
             carry = observations[:-49]
-            if frames and carry:
+            entry['decoder_carry_skipped']=bool(skip_next_carry)
+            if frames and carry and not skip_next_carry:
                 if len(carry) > len(frames):
                     raise ValueError('Unexpected decoder carry length')
                 for filename, observation in zip(frames[-len(carry):], carry):
@@ -130,6 +147,7 @@ def main():
                 filename = f'frame_{len(frames):06d}.jpg'
                 Image.open(source/observation['image']).save(dest/filename,quality=92)
                 frames.append(filename)
+            skip_next_carry=False
         save(); print(name, 'completed', flush=True)
     try:
         for a in anchors:
@@ -158,6 +176,16 @@ def main():
             markers.append({'label':a['label'],'frame_index':len(frames)-1,
                             'reference_distance_m':a['distance_m'],'correction':args.mode=='corrected'})
             save()
+            if args.anchor_state_refresh=='reference':
+                generate('refresh_'+a['label'],{
+                    'reference_image_id':image_ids[a['label']],
+                    'reset_session':True,'num_frames':120,'segment_boundaries':[0,120],
+                    'correction_image_id':None,'correction_strength':0},False)
+                # Reference warming is hidden state setup, not forward-travel video.
+                # Its decoder carry must never overwrite the prior generated bridge.
+                skip_next_carry=True
+                markers[-1]['state_refresh']='reference_reset'
+                save()
             previous_distance = a['distance_m']
         for i in range(2):
             camera = build_trajectory(seconds=2, speed=2, fov=90)
