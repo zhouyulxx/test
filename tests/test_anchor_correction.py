@@ -14,4 +14,15 @@ class CorrectionTest(unittest.TestCase):
   self.assertTrue(torch.equal(apply_anchor_correction(self.x,self.target,self.x,1,.6,6),self.x))
  def test_shape_validation(self):
   with self.assertRaises(ValueError):apply_anchor_correction(self.x,torch.ones(1,32,2,2,2),self.x,0,.6,6)
+ def test_progressive_guides_full_segment_without_forcing_endpoint(self):
+  y=self.x.clone()
+  for sigma in [.9,.7,.5,.3,.1,0]:
+   y=apply_anchor_correction(y,self.target,self.x,sigma,.85,6,span=0,policy='progressive')
+  self.assertTrue(torch.equal(y[:,:,:1],self.x[:,:,:1]))
+  self.assertGreater(float(y[:,:,6].mean()),.1)
+  self.assertGreater(float(y[:,:,-1].mean()),.9)
+  self.assertLess(float(y[:,:,-1].mean()),1)
+ def test_progressive_does_not_change_pure_noise(self):
+  y=apply_anchor_correction(self.x,self.target,self.x,1,.85,6,span=0,policy='progressive')
+  self.assertTrue(torch.equal(y,self.x))
 if __name__=='__main__':unittest.main()
