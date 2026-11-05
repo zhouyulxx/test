@@ -35,11 +35,15 @@ class PackageTest(unittest.TestCase):
         (self.root/name).write_text(json.dumps(value))
 
     def test_video_metadata_and_checksums_survive_export(self):
+        self.write('visual-review.json',{'passed':False,'observations':['Intermediate camera drift']})
         module.package(self.root,self.output)
         with zipfile.ZipFile(self.output) as archive:
             read=lambda name:archive.read('streetview-offline/'+name)
             self.assertEqual(json.loads(read('manifest.json'))['video'],'route.mp4')
             self.assertGreater(len(read('route.mp4')),1000)
+            self.assertFalse(json.loads(read('report.json'))['visual_passed'])
+            self.assertIn(b'VISUAL REVIEW FAILED',read('README.txt'))
+            self.assertIn(b'Intermediate camera drift',read('visual-review.json'))
             self.assertTrue(json.loads(read('generation.json'))['continue_kv_cache'])
             self.assertIn(b'frame_000000.jpg',read('comparison.html'))
             for name,digest in json.loads(read('checksums.json')).items():
