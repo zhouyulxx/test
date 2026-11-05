@@ -20,8 +20,9 @@ def main():
     parser.add_argument('inputs', type=Path, help='Directory containing anchors.json')
     parser.add_argument('--execute', action='store_true')
     parser.add_argument('--mode', choices=['baseline', 'corrected'], default='corrected')
-    parser.add_argument('--segments-per-gap', type=int, default=8)
-    parser.add_argument('--strength', type=float, default=0.6)
+    parser.add_argument('--segments-per-gap', type=int, default=4)
+    parser.add_argument('--strength', type=float, default=0.85)
+    parser.add_argument('--correction-policy', choices=['legacy','progressive'], default='progressive')
     parser.add_argument('--output', type=Path, default=Path('/Hy-Nomas/outputs/seg_ar_demo'))
     args = parser.parse_args()
     if args.segments_per_gap < 1 or not 0 <= args.strength <= 1:
@@ -48,7 +49,10 @@ def main():
             'continuation_jobs':intervals+2, 'frames_per_job':49,
             'nominal_seconds_per_gap':2*args.segments_per_gap,
             'route_metres':anchors[-1]['distance_m']-anchors[0]['distance_m'],
-            'correction':'last continuation segment of each gap only; existing heuristic baseline',
+            'correction_policy':args.correction_policy,
+            'maximum_correction_strength':args.strength,
+            'correction':('progressive guidance throughout each gap; soft latent correction, no exact endpoint clamp'
+                          if args.correction_policy=='progressive' else 'legacy correction on last segment only'),
             'metric_motion_calibrated':False, 'tail_jobs_after_last_anchor':2}
     print(json.dumps(plan, indent=2), flush=True)
     if not args.execute:
@@ -80,7 +84,7 @@ def main():
     def generate(name, extra, collect=True):
         prompt = json.dumps({'Style':'realistic photography', 'perspective_view':'first person',
             'subject_list':[], 'segments':[{'visual_description_long':'Travel along a downtown street with buildings, sidewalks, trees and parked vehicles.',
-            'description_change':'Move steadily forward along the same street, without turning or tilting.',
+            'description_change':'Move steadily forward at street level in the center of the same lane. Keep the horizon level, without turning, tilting, rising or flying.',
             'contained_actions':[{'start_time':0,'end_time':5 if not collect else 2,'action_description':'Continue moving forward.'}]}]})
         payload = {'prompt':prompt,'num_frames':49,'segment_boundaries':[0,49],
             'trusted_segment_boundaries':True,'height':480,'width':832,'seed':43,
@@ -88,7 +92,7 @@ def main():
             'reset_session':False,**extra}
         job = call('/v1/generate',payload)
         entry = {'name':name,'id':job['id'],'status':job['status'],
-                 'conditioning':{k:payload.get(k) for k in ['reference_image_id','correction_image_id','correction_strength']}}
+                 'conditioning':{k:payload.get(k) for k in ['reference_image_id','correction_image_id','correction_strength','correction_policy','correction_span']}}
         report['jobs'].append(entry); save()
         started = time.monotonic()
         while job['status'] not in ['succeeded','failed','cancelled']:
@@ -138,7 +142,8 @@ def main():
         previous_distance = anchors[0]['distance_m']
         for a in anchors[1:]:
             for part in range(args.segments_per_gap):
-                correction = args.mode == 'corrected' and part == args.segments_per_gap-1
+                correction = args.mode == 'corrected' and (args.correction_policy=='progressive' or part == args.segments_per_gap-1)
+                strength = args.strength*((part+1)/args.segments_per_gap)**1.5 if args.correction_policy=='progressive' else args.strength
                 start = previous_distance + (a['distance_m']-previous_distance)*part/args.segments_per_gap
                 end = previous_distance + (a['distance_m']-previous_distance)*(part+1)/args.segments_per_gap
                 camera = build_trajectory(seconds=2, fov=90)
@@ -147,7 +152,9 @@ def main():
                 generate(f"toward_{a['label']}_{part+1}",{
                     'camera_trajectory':json.dumps(camera),'trajectory_rotation_scale':1.0,
                     'correction_image_id':image_ids[a['label']] if correction else None,
-                    'correction_strength':args.strength if correction else 0})
+                    'correction_strength':strength if correction else 0,
+                    'correction_policy':args.correction_policy,
+                    'correction_span':0 if args.correction_policy=='progressive' else 4})
             markers.append({'label':a['label'],'frame_index':len(frames)-1,
                             'reference_distance_m':a['distance_m'],'correction':args.mode=='corrected'})
             save()
