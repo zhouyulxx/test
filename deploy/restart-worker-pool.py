@@ -52,6 +52,14 @@ def main():
         except psutil.NoSuchProcess:
             pass
     _, alive = psutil.wait_procs(alive, timeout=10)
+    unreaped = []
+    for child in alive:
+        try:
+            if child.status() != psutil.STATUS_ZOMBIE:
+                unreaped.append(child)
+        except psutil.NoSuchProcess:
+            pass
+    alive = unreaped
     if alive:
         pool.resume()
         raise RuntimeError('Old worker children did not exit; refusing duplicate startup')
