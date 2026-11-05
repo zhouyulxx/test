@@ -5,6 +5,8 @@ Gateway, authentication, model files and completed outputs are preserved.
 """
 import argparse
 import subprocess
+import shutil
+import datetime
 from pathlib import Path
 import psutil
 
@@ -37,6 +39,10 @@ def main():
     environment['STREETVIEW_FRAME_STRIDE'] = str(args.frame_stride)
     cwd = pool.cwd()
     runtime = Path(environment.get('RUNTIME_DIR', str(Path(cwd)/'.runtime/seg_ar_demo')))
+    history=runtime/'worker-log-history'/datetime.datetime.now(datetime.timezone.utc).strftime('%Y%m%dT%H%M%S%fZ')
+    history.mkdir(parents=True)
+    for log in runtime.glob('worker_*.log'):
+        shutil.copy2(log,history/log.name)
     # Stop respawning before touching children. Do not start a second worker
     # alongside the original supervisor, which can lose the persistent session.
     pool.suspend()
