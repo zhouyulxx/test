@@ -17,12 +17,15 @@ def safe(root, name):
     return path
 
 
-def package(run, output):
+def package(run, output, allow_partial=False):
     run = run.resolve()
     manifest = json.loads(safe(run, 'manifest.json').read_text())
     report = json.loads(safe(run, 'report.json').read_text())
-    if report['status'] != 'succeeded' or not manifest['frames']:
+    if (report['status'] != 'succeeded' and not allow_partial) or not manifest['frames']:
         raise ValueError('Only completed, nonempty runs can be packaged')
+    if report['status'] != 'succeeded':
+        manifest['partial'] = True
+        report['export_warning'] = 'Partial failed experiment retained for diagnosis; not a completed route.'
     for name in manifest['frames']:
         safe(run, name)
     inputs = json.loads(safe(run, 'inputs/anchors.json').read_text())
@@ -40,6 +43,7 @@ def package(run, output):
             dest = target / name
             dest.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(safe(run, name), dest)
+        (target/'report.json').write_text(json.dumps(report,indent=2))
         ffmpeg = shutil.which('ffmpeg')
         if not ffmpeg:
             import imageio_ffmpeg
@@ -61,6 +65,7 @@ def package(run, output):
         data = {'manifest': manifest, 'inputs': inputs, 'report': report}
         (target / 'data.js').write_text('window.STREETVIEW_DATA = ' + json.dumps(data, ensure_ascii=True) + ';\n')
         (target / 'README.txt').write_text(
+            ('PARTIAL FAILED EXPERIMENT. This is not a completed or visually validated route.\n' if manifest.get('partial') else '')+
             'Extract the entire ZIP, then open index.html in Chrome. No GPU, server, API key or internet is required.\n'
             'Controls: Space play/pause, Left/Right one frame, slider scrub, anchor buttons jump.\n'
             'route.mp4 provides smooth playback; individual frames remain available for inspection. comparison.html compares every anchor with the generated endpoint.\n'
@@ -84,5 +89,6 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('run', type=Path)
     parser.add_argument('output', type=Path)
+    parser.add_argument('--allow-partial', action='store_true', help='Explicitly export a failed partial baseline with its failure status preserved')
     args = parser.parse_args()
-    package(args.run, args.output)
+    package(args.run, args.output, args.allow_partial)
