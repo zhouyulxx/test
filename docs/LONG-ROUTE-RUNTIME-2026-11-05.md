@@ -7,7 +7,7 @@ Keep a single persistent generation session; apply subsequent anchors as soft
 latent corrections, then continue beyond the final anchor. Dates may differ.
 No turns, lane changes or head rotation are required for this experiment.
 
-Current configuration: 4 continuation segments per gap, 49 requested frames per
+Legacy configuration: 4 continuation segments per gap, 49 requested frames per
 segment, 6 inference steps, 832×480 generated output, seed 43, correction strength
 0.6 on the final segment of each gap, and 2 uncorrected segments after P12.
 One initialization plus 46 continuation jobs is expected. Every decoded frame is
@@ -51,11 +51,51 @@ calibrated generated travel distance. This is not a coherent reconstructed 3D ma
 
 ## Validation status
 
-Input ZIP verification and single-worker startup with dense export and recent
-history were observed. The initialization job completed. The full long-route
-render and visual quality evaluation are still pending at this checkpoint.
-Archive roundtrip checks verified preservation of per-job metadata and all
-checksum entries. JavaScript syntax and modified Python scripts were checked.
+The legacy soft correction run was stopped after 1,127 exported frames. Cache
+continuity was verified, and logs confirmed image correction was executed, but
+visual inspection failed: P03 drifted toward the sidewalk and P06 rose above
+street level. This is a failed partial baseline, not a successful full route.
+Camera embeddings were present; do not treat successful parameter delivery as
+proof of stable camera motion. The partial export preserves `status=failed` and
+`visual_passed=false`, with an explicit warning in the viewer and README.
+
+The next run retains the same 12 inputs and applies the new `progressive` policy:
+all four segments toward each anchor receive guidance with maximum strength 0.85
+and a gap-progress exponent of 1.5. Guidance spans the full latent segment,
+leaves its first latent frame unchanged, and becomes stronger at lower noise.
+Unlike the legacy rule, it is not divided by the denoising-step count. There is
+no exact endpoint replacement. The prompt also explicitly keeps the camera at
+street level with a level horizon. This combined change is experimental and is
+not a controlled ablation isolating only one parameter.
+
+Six anchor-correction tests passed in the model runtime, including retained
+legacy behavior, a preserved first frame, stronger soft convergence and no
+correction at pure noise. Three offline package tests passed: MP4/metadata/hash
+roundtrip, strict failed-run rejection unless partial export is explicit, and
+frame path traversal rejection. The source patch was checked for idempotence.
+
+Actual generated frames were used to verify MP4 playback, speed changes, frame
+stepping, spacebar control, scrubbing, anchor preview and the comparison page in
+the browser. The full progressive run and its visual evaluation remain pending.
+
+## Reproduction after a fresh image or runtime
+
+The Docker build now applies `patch_progressive_anchor.py` through
+`patch_upstream.py`. Existing running images require the progressive patch plus
+a managed worker-pool restart to load new Python code. Updating files alone does
+not replace code already imported by the model process. Keep gateway auth intact.
+
+Before submitting jobs, use `restart-worker-pool.py --execute --history recent
+--frame-stride 1` with submissions stopped, then verify readiness. The helper
+updates upstream's `worker.pid` and preserves worker logs for subsequent restarts.
+The runner's defaults now select progressive correction, 4 segments per gap and
+maximum strength 0.85. To reproduce the legacy policy, explicitly pass
+`--correction-policy legacy --strength 0.6 --segments-per-gap 4`.
+
+Final packages contain `route.mp4` for smooth playback and `comparison.html` for
+per-anchor review in addition to all viewer frames, original input images and
+generation metadata. A failed run may be retained with `--allow-partial`; this
+does not change its failed status or imply completion.
 
 Do not infer anchor effectiveness from successful jobs or the presence of input
 thumbnails. Inspect generated frames around corrections and the continuation
