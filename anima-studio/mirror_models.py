@@ -25,7 +25,7 @@ MODEL_FILES = [
     ("split_files/vae/qwen_image_vae.safetensors", "vae"),
 ]
 
-NOTICE = """The CircleStone Model is licensed by CircleStone Labs LLC under the CircleStone Non-Commercial License. Copyright CircleStone Labs LLC. IN NO EVENT SHALL CIRCLESTONE LABS LLC BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN CONTRACT OR TORT, ARISING FROM, OUT OF OR IN CONNECTION WITH USE OF THIS MODEL.
+NOTICE = """The CircleStone Model is licensed by CircleStone Labs LLC under the CircleStone Non-Commercial License. Copyright CircleStone Labs LLC. IN NO EVENT SHALL CIRCLESTONE LABS LLC BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH USE OF THIS MODEL.
 
 Source: https://huggingface.co/circlestone-labs/Anima
 No changes to the model weights are made: the original files are split byte-for-byte for transport.
